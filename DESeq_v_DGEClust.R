@@ -24,9 +24,12 @@ merge_results<-function(DEseq, DGEclust, name, textfile){
   DEseq<-na.omit(DEseq)
 
   #this will replace extreme values with zero, which makes the plot nicer
-  DEseq[DEseq$DESeq_padj < 1e-5, ]["DESeq_padj"]<-0
+  if (nrow(DEseq[DEseq$DESeq_padj < 1e-5, ]["DESeq_padj"]) > 0 ) {
+    DEseq[DEseq$DESeq_padj < 1e-5, ]["DESeq_padj"] <- 0
+  }
   return(DEseq)
 }
+
 scatterplot<-function(DEseq, name) {
   #make scatterplot of adjusted p-values and Venn Diagram of overlap
   sp =  ggplot(DEseq, aes(x=DESeq_padj, y=DGEClust_padj)) +
@@ -39,6 +42,7 @@ scatterplot<-function(DEseq, name) {
     ggtitle(name)
     return(sp)
 }
+
 vennplot <-function(DEseq) {
   draw.pairwise.venn(area1=nrow(DEseq[DEseq$DGEClust_padj < 0.1, ]), 
     area2=nrow(DEseq[DEseq$DESeq_padj < 0.1, ]), 
@@ -69,22 +73,83 @@ KRAUS_cds<-newCountDataSet( KRAUS_CountTable, condition)
 KRAUS_cds <- estimateSizeFactors(KRAUS_cds)
 KRAUS_cds <- estimateDispersions(KRAUS_cds, method="blind", sharingMode="fit-only")
 
-# =======================================================================================
-#I'm not sure how best to loop this
-KRAUS12 <- nbinomTest(KRAUS_cds, "leaf1", "leaf2")
-#KRAUS13 <- nbinomTest(KRAUS_cds, "leaf1", "leaf3")
-#KRAUS14 <- nbinomTest(KRAUS_cds, "leaf1", "leaf4")
-#KRAUS23 <- nbinomTest(KRAUS_cds, "leaf2", "leaf3")
-#KRAUS24 <- nbinomTest(KRAUS_cds, "leaf2", "leaf4")
-#KRAUS34 <- nbinomTest(KRAUS_cds, "leaf3", "leaf4")
 
+#I'm not sure how best to loop this
+
+# =======================================================================================
+KRAUS12 <- nbinomTest(KRAUS_cds, "leaf1", "leaf2")
 DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS12_pvals.txt", header=T)
 textfile<-"Google Drive/Selaginella/DGEClust/KRAUS12_overlap.txt"
 plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS12_overlap.pdf"  
 name = "KRAUS12"
 
-KRAUS12<-merge_results(KRAUS12, DGEClust, name, textfile)
+results<-merge_results(KRAUS12, DGEClust, name, textfile)
 pdf(plotfile)
-scatterplot(KRAUS12, name)
-vennplot(KRAUS12)
+scatterplot(results, name)
+vennplot(results)
+dev.off()
+
+# =======================================================================================
+KRAUS13 <- nbinomTest(KRAUS_cds, "leaf1", "leaf3")
+DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS13_pvals.txt", header=T)
+textfile<-"Google Drive/Selaginella/DGEClust/KRAUS13_overlap.txt"
+plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS13_overlap.pdf"  
+name = "KRAUS13"
+
+results<-merge_results(KRAUS13, DGEClust, name, textfile)
+pdf(plotfile)
+scatterplot(results, name)
+vennplot(results)
+dev.off()
+
+# =======================================================================================
+KRAUS14 <- nbinomTest(KRAUS_cds, "leaf1", "leaf4")
+DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS14_pvals.txt", header=T)
+textfile<-"Google Drive/Selaginella/DGEClust/KRAUS14_overlap.txt"
+plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS14_overlap.pdf"  
+name = "KRAUS14"
+
+results<-merge_results(KRAUS14, DGEClust, name, textfile)
+pdf(plotfile)
+scatterplot(results, name)
+vennplot(results)
+dev.off()
+
+# =======================================================================================
+KRAUS23 <- nbinomTest(KRAUS_cds, "leaf2", "leaf3")
+DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS23_pvals.txt", header=T)
+textfile<-"Google Drive/Selaginella/DGEClust/KRAUS23_overlap.txt"
+plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS23_overlap.pdf"  
+name = "KRAUS23"
+
+results<-merge_results(KRAUS23, DGEClust, name, textfile)
+pdf(plotfile)
+scatterplot(results, name)
+vennplot(results)
+dev.off()
+
+# =======================================================================================
+KRAUS24 <- nbinomTest(KRAUS_cds, "leaf2", "leaf4")
+DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS24_pvals.txt", header=T)
+textfile<-"Google Drive/Selaginella/DGEClust/KRAUS24_overlap.txt"
+plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS24_overlap.pdf"  
+name = "KRAUS24"
+
+results<-merge_results(KRAUS24, DGEClust, name, textfile)
+pdf(plotfile)
+scatterplot(results, name)
+vennplot(results)
+dev.off()
+
+# =======================================================================================
+KRAUS34 <- nbinomTest(KRAUS_cds, "leaf3", "leaf4")
+DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS34_pvals.txt", header=T)
+textfile<-"Google Drive/Selaginella/DGEClust/KRAUS34_overlap.txt"
+plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS34_overlap.pdf"  
+name = "KRAUS34"
+
+results<-merge_results(KRAUS34, DGEClust, name, textfile)
+pdf(plotfile)
+scatterplot(results, name)
+vennplot(results)
 dev.off()
