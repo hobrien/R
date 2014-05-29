@@ -33,6 +33,8 @@ merge_results<-function(DEseq, DGEclust, name, textfile){
 #read in raw count data
 selaginellaCountTable =  read.table( file="Bioinformatics/Selaginella/Counts/Selag_counts.txt" , header=TRUE, row.names=1 )
 
+plotfile<-"Google Drive/Selaginella/DGEClust/Overlap.pdf"  
+pdf(plotfile)
 for (species in c('KRAUS', 'UNC', 'WILD', 'MOEL')) {
   if (species == 'MOEL') {
      max=3 
@@ -53,9 +55,7 @@ for (species in c('KRAUS', 'UNC', 'WILD', 'MOEL')) {
        name = paste(species, sample1, sample2, sep="")
        DGEClust<-read.table(file=paste("Bioinformatics/Selaginella/DGEClust/", name, "_pvals.txt", sep=""), header=T)
        textfile<-paste("Google Drive/Selaginella/DGEClust/", name, "_overlap.txt", sep="")
-       plotfile<-paste("Google Drive/Selaginella/DGEClust/", name, "_overlap.pdf", sep="")  
        results<-merge_results(DESeq.results, DGEClust, name, textfile)
-       pdf(plotfile)
        print(ggplot(results, aes(x=DESeq_padj, y=DGEClust_padj)) +
           geom_point(size=1.2) +
           scale_x_log10() +
@@ -78,7 +78,7 @@ for (species in c('KRAUS', 'UNC', 'WILD', 'MOEL')) {
             fontfamily='sans',
             cat.fontfamily='sans')
        }
-       dev.off()
     }
   }
 }
+dev.off()
