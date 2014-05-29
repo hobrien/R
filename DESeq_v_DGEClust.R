@@ -30,126 +30,55 @@ merge_results<-function(DEseq, DGEclust, name, textfile){
   return(DEseq)
 }
 
-scatterplot<-function(DEseq, name) {
-  #make scatterplot of adjusted p-values and Venn Diagram of overlap
-  sp =  ggplot(DEseq, aes(x=DESeq_padj, y=DGEClust_padj)) +
-    geom_point(size=1.2) +
-    scale_x_log10() +
-    scale_y_log10() +
-    geom_hline(yintercept=0.1, size=.2) +
-    geom_vline(xintercept=0.1, size=.2) +
-    theme_bw() +
-    ggtitle(name)
-    return(sp)
-}
-
-vennplot <-function(DEseq) {
-  draw.pairwise.venn(area1=nrow(DEseq[DEseq$DGEClust_padj < 0.1, ]), 
-    area2=nrow(DEseq[DEseq$DESeq_padj < 0.1, ]), 
-    cross.area=nrow(DEseq[DEseq$DESeq_padj < 0.1 & DEseq$DGEClust_padj < 0.1, ]), 
-    fill=c('blue', 'red'), 
-    cat.col = c('blue', 'red'),
-    category=c("DESeq", "DGEClust"), 
-    lty = 'blank',
-    cex = 2,
-    cat.cex = 1.75,
-    margin=0.2,
-    fontfamily='sans',
-    cat.fontfamily='sans')
- }
-
-
 #read in raw count data
 selaginellaCountTable =  read.table( file="Bioinformatics/Selaginella/Counts/Selag_counts.txt" , header=TRUE, row.names=1 )
 
-#Create a set of factors to discribe the tissues
-condition = factor( c( "leaf1", "leaf2", "leaf3", "leaf4" ) )
+for (species in c('KRAUS', 'UNC', 'WILD', 'MOEL')) {
+  if (species == 'MOEL') {
+     max=3 
+     condition = factor( c( "leaf1", "leaf2", "leaf3" ) )
+     CountTable = selaginellaCountTable [c(paste(species, 1, sep=''), paste(species, 2, sep=''), paste(species, 3, sep=''))]
+  }  else {
+     max=4
+     condition = factor( c( "leaf1", "leaf2", "leaf3", "leaf4" ) )
+     CountTable = selaginellaCountTable[c(paste(species, 1, sep=''), paste(species, 2, sep=''), paste(species, 3, sep=''), paste(species, 4, sep=''))]
+  }
 
-#subset the KRAUS data
-KRAUS_CountTable = selaginellaCountTable [c('KRAUS1', 'KRAUS2', 'KRAUS3','KRAUS4')]
-
-#create DESeq object from KRAUS count data and conditions and estimate dipersions
-KRAUS_cds<-newCountDataSet( KRAUS_CountTable, condition)
-KRAUS_cds <- estimateSizeFactors(KRAUS_cds)
-KRAUS_cds <- estimateDispersions(KRAUS_cds, method="blind", sharingMode="fit-only")
-
-
-#I'm not sure how best to loop this
-
-# =======================================================================================
-KRAUS12 <- nbinomTest(KRAUS_cds, "leaf1", "leaf2")
-DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS12_pvals.txt", header=T)
-textfile<-"Google Drive/Selaginella/DGEClust/KRAUS12_overlap.txt"
-plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS12_overlap.pdf"  
-name = "KRAUS12"
-
-results<-merge_results(KRAUS12, DGEClust, name, textfile)
-pdf(plotfile)
-scatterplot(results, name)
-vennplot(results)
-dev.off()
-
-# =======================================================================================
-KRAUS13 <- nbinomTest(KRAUS_cds, "leaf1", "leaf3")
-DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS13_pvals.txt", header=T)
-textfile<-"Google Drive/Selaginella/DGEClust/KRAUS13_overlap.txt"
-plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS13_overlap.pdf"  
-name = "KRAUS13"
-
-results<-merge_results(KRAUS13, DGEClust, name, textfile)
-pdf(plotfile)
-scatterplot(results, name)
-vennplot(results)
-dev.off()
-
-# =======================================================================================
-KRAUS14 <- nbinomTest(KRAUS_cds, "leaf1", "leaf4")
-DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS14_pvals.txt", header=T)
-textfile<-"Google Drive/Selaginella/DGEClust/KRAUS14_overlap.txt"
-plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS14_overlap.pdf"  
-name = "KRAUS14"
-
-results<-merge_results(KRAUS14, DGEClust, name, textfile)
-pdf(plotfile)
-scatterplot(results, name)
-vennplot(results)
-dev.off()
-
-# =======================================================================================
-KRAUS23 <- nbinomTest(KRAUS_cds, "leaf2", "leaf3")
-DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS23_pvals.txt", header=T)
-textfile<-"Google Drive/Selaginella/DGEClust/KRAUS23_overlap.txt"
-plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS23_overlap.pdf"  
-name = "KRAUS23"
-
-results<-merge_results(KRAUS23, DGEClust, name, textfile)
-pdf(plotfile)
-scatterplot(results, name)
-vennplot(results)
-dev.off()
-
-# =======================================================================================
-KRAUS24 <- nbinomTest(KRAUS_cds, "leaf2", "leaf4")
-DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS24_pvals.txt", header=T)
-textfile<-"Google Drive/Selaginella/DGEClust/KRAUS24_overlap.txt"
-plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS24_overlap.pdf"  
-name = "KRAUS24"
-
-results<-merge_results(KRAUS24, DGEClust, name, textfile)
-pdf(plotfile)
-scatterplot(results, name)
-vennplot(results)
-dev.off()
-
-# =======================================================================================
-KRAUS34 <- nbinomTest(KRAUS_cds, "leaf3", "leaf4")
-DGEClust<-read.table(file="Bioinformatics/Selaginella/DGEClust/KRAUS34_pvals.txt", header=T)
-textfile<-"Google Drive/Selaginella/DGEClust/KRAUS34_overlap.txt"
-plotfile<-"Google Drive/Selaginella/DGEClust/KRAUS34_overlap.pdf"  
-name = "KRAUS34"
-
-results<-merge_results(KRAUS34, DGEClust, name, textfile)
-pdf(plotfile)
-scatterplot(results, name)
-vennplot(results)
-dev.off()
+  DESeq<-newCountDataSet( CountTable, condition)
+  DESeq <- estimateSizeFactors(DESeq)
+  DESeq <- estimateDispersions(DESeq, method="blind", sharingMode="fit-only")
+  for (sample1 in 1:(max-1)){
+    for (sample2 in (sample1+1):max){
+       DESeq.results <- nbinomTest(DESeq, paste("leaf", sample1, sep=""), paste("leaf", sample2, sep=""))
+       name = paste(species, sample1, sample2, sep="")
+       DGEClust<-read.table(file=paste("Bioinformatics/Selaginella/DGEClust/", name, "_pvals.txt", sep=""), header=T)
+       textfile<-paste("Google Drive/Selaginella/DGEClust/", name, "_overlap.txt", sep="")
+       plotfile<-paste("Google Drive/Selaginella/DGEClust/", name, "_overlap.pdf", sep="")  
+       results<-merge_results(DESeq.results, DGEClust, name, textfile)
+       pdf(plotfile)
+       print(ggplot(results, aes(x=DESeq_padj, y=DGEClust_padj)) +
+          geom_point(size=1.2) +
+          scale_x_log10() +
+          scale_y_log10() +
+          geom_hline(yintercept=0.1, size=.2) +
+          geom_vline(xintercept=0.1, size=.2) +
+          theme_bw() +
+          ggtitle(name))
+       if ( nrow(results[results$DGEClust_padj < 0.1, ]) > 0 && nrow(results[results$DESeq_padj < 0.1, ]) > 0 ) {
+         draw.pairwise.venn(area1=nrow(results[results$DGEClust_padj < 0.1, ]), 
+            area2=nrow(results[results$DESeq_padj < 0.1, ]), 
+            cross.area=nrow(results[results$DESeq_padj < 0.1 & results$DGEClust_padj < 0.1, ]), 
+            fill=c('blue', 'red'), 
+            cat.col = c('blue', 'red'),
+            category=c("DESeq", "DGEClust"), 
+            lty = 'blank',
+            cex = 2,
+            cat.cex = 1.75,
+            margin=0.2,
+            fontfamily='sans',
+            cat.fontfamily='sans')
+       }
+       dev.off()
+    }
+  }
+}
