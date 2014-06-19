@@ -12,7 +12,9 @@ MergeResults<-function(DEseq, DGEclust, name, textfile){
 
   #sort rows
   DGEClust<-DGEClust[order(as.numeric(rownames(DGEClust))),]
-
+  
+  #rename DGEClust columns, if necessary
+  DGEClust<-rename(DGEClust, c("Posteriors" = "pval", "FDR" = "padj"))
   #add DGESClust data to results
   DEseq["DGEClust_pval"]<-DGEClust["pval"]
   DEseq["DGEClust_padj"]<-DGEClust["padj"]
@@ -33,12 +35,15 @@ scatterplot<-function(pvalues, DESeq_cutoff, DGEClust_cutoff, name) {
   #make scatterplot of adjusted p-values and Venn Diagram of overlap
   sp = ggplot(pvalues, aes(x=DESeq_padj, y=DGEClust_padj)) +
     geom_point(size=1.2) +
-    scale_x_log10() +
-    scale_y_log10() +
+    scale_x_log10(limits=c(1e-5,1), breaks=c(1e-5, 1e-4, 1e-3, 0.01, 0.1, 1)) +
+    scale_y_log10(limits=c(1e-5,1), breaks=c(1e-5, 1e-4, 1e-3, 0.01, 0.1, 1)) +
     geom_hline(yintercept=DGEClust_cutoff, size=.2) +
     geom_vline(xintercept=DESeq_cutoff, size=.2) +
+    annotate("text", x=1e-5, y=1, hjust=0, label=sprintf("r = %.3f", cor(results$DESeq_padj,results$DGEClust_padj))) +
+    annotate("text", hjust=0, x=1e-5, y=.7, label=sprintf("p = %.5f", cor.test(pvalues$DESeq_padj,pvalues$DGEClust_padj)$p.value)) +
     theme_bw() +
-    ggtitle(name)
+    ggtitle(name) +
+    geom_point(data=results[results$id == 'cluster_19641',], colour='red')
     return(sp)
 }
 vennplot <-function(pvalues, DESeq_cutoff, DGEClust_cutoff) {
@@ -72,14 +77,38 @@ vennplot <-function(pvalues, DESeq_cutoff, DGEClust_cutoff) {
             cat.fontfamily='sans')
       }
    }
+   else if (nrow(pvalues[pvalues$DGEClust_padj < DGEClust_cutoff, ]) > 0) {
+      draw.single.venn(area=nrow(pvalues[pvalues$DGEClust_padj < DGEClust_cutoff, ]), 
+                       fill=c('red'), 
+                       cat.col = c('red'),
+                       category=c("DGEClust"), 
+                       lty = 'blank',
+                       cex = 2,
+                       cat.cex = 1.75,
+                       margin=0.2,
+                       fontfamily='sans',
+                       cat.fontfamily='sans')
+   }
+   else if (nrow(pvalues[pvalues$DESeq_padj < DESeq_cutoff, ]) > 0) {
+      draw.single.venn(area=nrow(pvalues[pvalues$DESeq_padj < DESeq_cutoff, ]), 
+                       fill=c('blue'), 
+                       cat.col = c('blue'),
+                       category=c("DESeq"), 
+                       lty = 'blank',
+                       cex = 2,
+                       cat.cex = 1.75,
+                       margin=0.2,
+                       fontfamily='sans',
+                       cat.fontfamily='sans')
+   }
 }
- 
  
 #read in raw count data
 selaginellaCountTable =  read.table( file="Bioinformatics/Selaginella/Counts/Selag_counts.txt" , header=TRUE, row.names=1 )
 species.list <- c('KRAUS', 'MOEL', 'UNC', 'WILD')
-DESeq_cutoff = 0.1
+
 for (DGEClust_cutoff in c(0.1, 0.01, 0.001)) {
+   DESeq_cutoff<- DGEClust_cutoff
    plotfile<-paste("Google Drive/Selaginella/DGEClust/Overlap_", DGEClust_cutoff, ".pdf", sep="")  
    pdf(plotfile)
    #Analyse Species comparisons
@@ -94,7 +123,7 @@ for (DGEClust_cutoff in c(0.1, 0.01, 0.001)) {
          name = paste(sample1, sample2, sep="_")
          print(name)
          DESeq.results <- nbinomTest(DESeq, sample1, sample2)
-         DGEClust<-read.table(file=paste("Bioinformatics/Selaginella/DGEClust/pvals_", name, ".txt", sep=""), header=T)
+         DGEClust<-read.table(file=paste("Bioinformatics/Selaginella/Selaginella_DGE/By_species/", name, "_pvals.txt", sep=""), header=T)
          DGEClust<-rename(DGEClust, c("Posteriors" = "pval", "FDR" = "padj"))
          textfile<-paste("Google Drive/Selaginella/DGEClust/", name, "_overlap_", DGEClust_cutoff, ".txt", sep="")
          results<-MergeResults(DESeq.results, DGEClust, name, textfile)
@@ -102,26 +131,40 @@ for (DGEClust_cutoff in c(0.1, 0.01, 0.001)) {
          print(vennplot(results, DESeq_cutoff, DGEClust_cutoff))
       }
    }
-   for (species in species.list) {
+   for (species in c(species.list, 'ALL')) {
       if (species == 'MOEL') {
          max=3 
          condition = factor( c( "leaf1", "leaf2", "leaf3" ) )
          CountTable = selaginellaCountTable [c(paste(species, 1, sep=''), paste(species, 2, sep=''), paste(species, 3, sep=''))]
+         folder = "Bioinformatics/Selaginella/Selaginella_DGE/All_by_all/"
       }
+      else if  (species == 'ALL') {
+         max=4
+         condition = factor( c( "leaf1", "leaf2", "leaf3", "leaf4", "leaf1", "leaf2", "leaf3", "leaf1", "leaf2", "leaf3", "leaf4", "leaf1", "leaf2", "leaf3", "leaf4") )
+         CountTable = selaginellaCountTable
+         folder = "Bioinformatics/Selaginella/Selaginella_DGE/By_leaf/"
+      }  
       else {
-         max=2#4
+         max=4
          condition = factor( c( "leaf1", "leaf2", "leaf3", "leaf4" ) )
          CountTable = selaginellaCountTable[c(paste(species, 1, sep=''), paste(species, 2, sep=''), paste(species, 3, sep=''), paste(species, 4, sep=''))]
+         folder = "Bioinformatics/Selaginella/Selaginella_DGE/All_by_all/"
       }
 
       DESeq<-newCountDataSet( CountTable, condition)
       DESeq <- estimateSizeFactors(DESeq)
-      DESeq <- estimateDispersions(DESeq, method="blind", sharingMode="fit-only")
+      if  (species == 'ALL') {
+         DESeq <- estimateDispersions(DESeq)
+      }
+      else {
+         DESeq <- estimateDispersions(DESeq, method="blind", sharingMode="fit-only")
+      }
       for (sample1 in 1:(max-1)){
          for (sample2 in (sample1+1):max){
             DESeq.results <- nbinomTest(DESeq, paste("leaf", sample1, sep=""), paste("leaf", sample2, sep=""))
             name = paste(species, sample1, sample2, sep="")
-            DGEClust<-read.table(file=paste("Bioinformatics/Selaginella/DGEClust/", name, "_pvals.txt", sep=""), header=T)
+            DGEClust<-read.table(file=paste(folder, name, "_pvals.txt", sep=""), header=T)
+            results<-MergeResults(DESeq.results, DGEClust, name, textfile)
             textfile<-paste("Google Drive/Selaginella/DGEClust/", name, "_overlap_", DGEClust_cutoff, ".txt", sep="")
             print(scatterplot(results, DESeq_cutoff, DGEClust_cutoff, name))
             print(vennplot(results, DESeq_cutoff, DGEClust_cutoff))
