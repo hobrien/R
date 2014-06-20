@@ -114,7 +114,7 @@ args <- commandArgs(trailingOnly = TRUE)
 DGEClust_file <-args[1]
 DGEClust_cutoff <- as.numeric(args[2])
 DESeq_cutoff<- DGEClust_cutoff
-plotfile<-paste(strsplit(DGEClust_file, '\\.')[[1]][1], 'pdf', sep='.') 
+plotfile<-paste(strsplit(DGEClust_file, '\\.')[[1]][1], DGEClust_cutoff, 'pdf', sep='.') 
 textfile<-paste(strsplit(DGEClust_file, '\\.')[[1]][1], DGEClust_cutoff, 'overlap.txt', sep='_') 
 species_regex<-gregexpr('(KRAUS)|(MOEL)|(UNC)|(WILD)', DGEClust_file)
 if ( length(species_regex[[1]]) == 2 ) {  #Analyse Species comparisons
@@ -125,13 +125,32 @@ if ( length(species_regex[[1]]) == 2 ) {  #Analyse Species comparisons
    DESeq<-newCountDataSet( selaginellaCountTable, condition)
    DESeq <- estimateSizeFactors(DESeq)
    DESeq <- estimateDispersions(DESeq)
-   DESeq.results <- nbinomTest(DESeq, sample1, sample2)
-   DGEClust<-read.table(file=DGEClust_file, header=T)
-   DGEClust<-rename(DGEClust, c("Posteriors" = "pval", "FDR" = "padj"))
-   results<-MergeResults(DESeq.results, DGEClust, name, textfile)
-   pdf(plotfile)
-   print(scatterplot(results, DESeq_cutoff, DGEClust_cutoff, name))
-   print(vennplot(results, DESeq_cutoff, DGEClust_cutoff))
-   dev.off()
-}       
+} else if ( length(species_regex[[1]]) == 1 ) { #Analyse comparison between two leaves within a species
+   regex_start <- species_regex[[1]][1]
+   regex_end <- regex_start + attr(species_regex[[1]], 'match.length')[1] -1
+   species <- substr(DGEClust_file, regex_start, regex_end)
+   sample1 <- paste("leaf", substr(DGEClust_file, regex_end + 1, regex_end + 1), sep='')
+   sample2 <- paste("leaf", substr(DGEClust_file, regex_end + 2, regex_end + 2), sep='')
+   name = substr(DGEClust_file, regex_start, regex_end + 2)
+   if (species == 'MOEL') {
+     condition = factor( c( "leaf1", "leaf2", "leaf3" ) )
+     CountTable = selaginellaCountTable [c(paste(species, 1, sep=''), paste(species, 2, sep=''), paste(species, 3, sep=''))]
+  }
+  else {
+     condition = factor( c( "leaf1", "leaf2", "leaf3", "leaf4" ) )
+     CountTable = selaginellaCountTable[c(paste(species, 1, sep=''), paste(species, 2, sep=''), paste(species, 3, sep=''), paste(species, 4, sep=''))]
+  }
+  DESeq<-newCountDataSet( CountTable, condition)
+  DESeq <- estimateSizeFactors(DESeq)
+  DESeq <- estimateDispersions(DESeq, method="blind", sharingMode="fit-only")
+}
+DESeq.results <- nbinomTest(DESeq, sample1, sample2)
+DGEClust<-read.table(file=DGEClust_file, header=T)
+DGEClust<-rename(DGEClust, c("Posteriors" = "pval", "FDR" = "padj"))
+results<-MergeResults(DESeq.results, DGEClust, name, textfile)
+pdf(plotfile)
+print(scatterplot(results, DESeq_cutoff, DGEClust_cutoff, name))
+print(vennplot(results, DESeq_cutoff, DGEClust_cutoff))
+dev.off()
+       
     
