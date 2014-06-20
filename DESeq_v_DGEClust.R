@@ -125,7 +125,7 @@ if ( length(species_regex[[1]]) == 2 ) {  #Analyse Species comparisons
    DESeq<-newCountDataSet( selaginellaCountTable, condition)
    DESeq <- estimateSizeFactors(DESeq)
    DESeq <- estimateDispersions(DESeq)
-} else if ( length(species_regex[[1]]) == 1 ) { #Analyse comparison between two leaves within a species
+} else if ( species_regex[[1]][1] > -1 ) { #Analyse comparison between two leaves within a species
    regex_start <- species_regex[[1]][1]
    regex_end <- regex_start + attr(species_regex[[1]], 'match.length')[1] -1
    species <- substr(DGEClust_file, regex_start, regex_end)
@@ -143,6 +143,20 @@ if ( length(species_regex[[1]]) == 2 ) {  #Analyse Species comparisons
   DESeq<-newCountDataSet( CountTable, condition)
   DESeq <- estimateSizeFactors(DESeq)
   DESeq <- estimateDispersions(DESeq, method="blind", sharingMode="fit-only")
+} else {
+   leaf_regex<-gregexpr('(leaf)|(all)', DGEClust_file, ignore.case=T)
+   if ( leaf_regex[[1]][1] > -1 ) { #Analyse comparisons between leaves pooled by species
+      regex_start <- leaf_regex[[1]][1]
+      regex_end <- regex_start + attr(leaf_regex[[1]], 'match.length')[1] -1
+      species <- 'ALL'
+      sample1 <- paste("leaf", substr(DGEClust_file, regex_end + 1, regex_end + 1), sep='')
+      sample2 <- paste("leaf", substr(DGEClust_file, regex_end + 2, regex_end + 2), sep='')
+      name = substr(DGEClust_file, regex_start, regex_end + 2)
+      condition = factor( c( "leaf1", "leaf2", "leaf3", "leaf4", "leaf1", "leaf2", "leaf3", "leaf1", "leaf2", "leaf3", "leaf4", "leaf1", "leaf2", "leaf3", "leaf4") )
+      DESeq<-newCountDataSet(selaginellaCountTable, condition)
+      DESeq <- estimateSizeFactors(DESeq)
+      DESeq <- estimateDispersions(DESeq)
+  }
 }
 DESeq.results <- nbinomTest(DESeq, sample1, sample2)
 DGEClust<-read.table(file=DGEClust_file, header=T)
