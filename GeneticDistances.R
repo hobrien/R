@@ -1,30 +1,28 @@
-library("ggplot2")
 library("ape")
-library("plyr")
-library("reshape")
+library("reshape2")
+library("ggplot2")
 
-CalculateDistances<-function(file){
-   aln<-read.dna(file=file, format="fasta")
-   dist<-dist.dna(aln, model="raw", pairwise.deletion=T)  #caluculate pairwise distances
-   dist<-as.matrix(dist)  #convert to matrix
-   dist[upper.tri(dist, diag=T)]<-NA  #convert values on and above diagonal to NAs to avoid double counting
-   dist<-melt(dist)  #convert to dataframe
-   dist<-dist[!is.na(dist$value),]   #removing NAs
-   dist$Comparison=paste(sub("((comp)|_).*", "", dist$X1), sub("((comp)|_).*", "", dist$X2), sep="_")  #concatinate spcecies names (removing gene info)
-   dist<-adply(dist, 1, transform, Comparison = paste(sort(strsplit(Comparison, "_")[[1]]), collapse="_"))  #sort species in comparison
-   dist<-rename(dist, c("value" = "Distance"))
-   dist$Locus<-sub("^([^.]*).*", "\\1", basename(file))  #add locus info from file name
-   return(dist)
+GetDist <- function(distance, seq1, seq2){
+  selection<-paste("'", seq1, "'", ", ", "'", seq2, "'", sep="")
+  eval(parse(text = paste("as.matrix(distance)[",
+                          selection, "]")))
 }
 
-#setwd("/Users/HeathOBrien/Bioinformatics/Selaginella/SingleCopy/")
-x<- data.frame(Comparison=c(), Distance=c(), Locus=c())
-
+setwd("~/Bioinformatics/Test/")
+Species = c("KRAUS", "MOEL", "UNC", "WILD")
+results<-data.frame(Comparison=character(), Distance=numeric(), Locus=character())
 for (file in list.files('.')) {
-   dist <- tryCatch(CalculateDistances(file), error = function(e) NULL)
-   x<- rbind(x, dist[c("Distance", "Comparison", "Locus")])
+  aln<-read.dna(file=file, format="fasta")
+  dist<-dist.dna(aln, model="raw", pairwise.deletion=T)
+  attr(dist, "Labels")<-as.list(colsplit(string=attr(dist, "Labels"), pattern="\\Q|\\E", names=c(1,2))[1])[[1]]
+  for (x in 1:3){
+    for (y in (x+1):4){
+      if (Species[x] %in% labels(dist) && Species[y] %in% labels(dist)) {
+        results<-rbind(results,data.frame(Comparison=paste(Species[x], Species[y], sep="-"), Distance=GetDist(dist, Species[x], Species[y]), Locus=file))
+      }
+    }  
+  }
 }
-#setwd("/Users/HeathOBrien/Google Drive/Selaginella/SingleCopy/")
-pdf("Histograms.pdf")
-ggplot(x, aes(Distance))+geom_histogram()+facet_wrap(~Comparison)+theme_bw()
+pdf("~/Google Drive/Selaginella/Results/Pairwise_distances.pdf")
+ggplot(results, aes(Distance))+geom_histogram()+facet_wrap(~Comparison)+theme_bw()
 dev.off()
