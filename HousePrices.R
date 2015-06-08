@@ -69,11 +69,11 @@ AllPrices$Street<- ordered(AllPrices$Street, levels=c('MONTGOMERY STREET',
                                                        'NEWPORT STREET'
                                                       )
                           )
-colorRampPalette(brewer.pal(9,"Blues"))(100)
 filter(AllPrices, grepl('STREET', Street)) %>% 
   ggplot(., aes(x=as.Date(Date, format="%Y-%m-%d"), y=as.numeric(Price))) +
   geom_point(aes(colour=Street)) +
-  geom_smooth(method="loess") +
+  geom_smooth(method="loess", span=.3) +
   scale_colour_manual(values=rev(colorRampPalette(brewer.pal(9,"Blues"))(10)[3:10])) +
+  scale_x_date(breaks='year', labels = date_format("'%y")) +
   xlab("Date") +
   ylab("Price")
