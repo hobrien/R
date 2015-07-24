@@ -78,6 +78,7 @@ newdat = data.frame(Position = c("Academic", "Staff", "Student", "Academic", "St
                     Gender=c("Male", "Female", "Male", "Female", "Male"))
 count<-cbind(count, predict(MOD.1, count, type = "prob", se.fit=TRUE))
 
+#with faceting
 ggplot(count, aes(Gender, n/Total, fill=Gender)) + 
   geom_bar(stat="identity", position='dodge') +
   geom_point(aes(x=Gender, y=fit)) +
@@ -89,3 +90,31 @@ ggplot(count, aes(Gender, n/Total, fill=Gender)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.margin = unit(c(1,1,1.1,1), "cm")) +
   scale_fill_manual(values=(brewer.pal(12, "Paired")[c(1,2)]))
 grid.text("© Heath O'Brien 2015", x=unit(.99, "npc"), y=unit(.01, "npc"), just=c("right", "bottom"))
+#with dodge
+dodge <- position_dodge(width=0.9)
+ggplot(count, aes(Q16, n/Total, fill=Gender)) + 
+  geom_bar(stat="identity", position='dodge') +
+  geom_point(aes(x=Q16, y=fit), position=dodge) +
+  geom_errorbar(aes(x=Q16, ymax=fit+1.96*se.fit, ymin=fit-1.96*se.fit), width=.25, position=dodge) +
+  facet_grid(Position ~ .) +
+  xlab("response") +
+  ylab("proportion") +
+  ggtitle('I feel I have a good work-life balance') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.margin = unit(c(1,1,1.1,1), "cm")) +
+  scale_fill_manual(values=(brewer.pal(12, "Paired")[c(1,2)]))
+grid.text("© Heath O'Brien 2015", x=unit(.99, "npc"), y=unit(.01, "npc"), just=c("right", "bottom"))
+#Bars represent data. Points are fitted values from ordinal logit regression (response ~ Gender * Position). Error bars represented 95% confidence values for fitted values. 
+
+#now try to plot counts
+ggplot(count, aes(Q16, n, fill=Gender)) + 
+  geom_bar(stat="identity", position='dodge') +
+  geom_point(aes(x=Q16, y=fit*Total), position=dodge) +
+  geom_errorbar(aes(x=Q16, ymax=(fit+1.96*se.fit)*Total, ymin=(fit-1.96*se.fit)*Total), width=.25, position=dodge) +
+  facet_grid(Position ~ .) +
+  xlab("response") +
+  ylab("count") +
+  ggtitle('I feel I have a good work-life balance') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.margin = unit(c(1,1,1.1,1), "cm")) +
+  scale_fill_manual(values=(brewer.pal(12, "Paired")[c(1,2)]))
+grid.text("© Heath O'Brien 2015", x=unit(.99, "npc"), y=unit(.01, "npc"), just=c("right", "bottom"))
+
