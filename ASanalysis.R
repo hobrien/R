@@ -78,12 +78,14 @@ newdat = data.frame(Position = c("Academic", "Staff", "Student", "Academic", "St
                     Gender=c("Male", "Female", "Male", "Female", "Male"))
 count<-cbind(count, predict(MOD.1, count, type = "prob", se.fit=TRUE))
 
-ggplot(count, aes(Q16, n/Total, fill=Gender)) + 
+ggplot(count, aes(Gender, n/Total, fill=Gender)) + 
   geom_bar(stat="identity", position='dodge') +
-  facet_grid(Position ~ .) +
+  geom_point(aes(x=Gender, y=fit)) +
+  geom_errorbar(aes(x=Gender, ymax=fit+1.96*se.fit, ymin=fit-1.96*se.fit), width=.25) +
+  facet_grid(Position ~ Q16) +
   xlab("response") +
+  ylab("proportion") +
   ggtitle('I feel I have a good work-life balance') +
   theme(axis.text.x = element_text(angle = 45, hjust = 1), plot.margin = unit(c(1,1,1.1,1), "cm")) +
-  scale_fill_manual(values=(brewer.pal(12, "Paired")[c(1,2)])) +
-  geom_point(aes(Q16, fit))
+  scale_fill_manual(values=(brewer.pal(12, "Paired")[c(1,2)]))
 grid.text("© Heath O'Brien 2015", x=unit(.99, "npc"), y=unit(.01, "npc"), just=c("right", "bottom"))
