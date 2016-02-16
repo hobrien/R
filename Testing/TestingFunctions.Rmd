@@ -1,0 +1,64 @@
+---
+title: "Testing"
+output: html_document
+---
+
+```{r include=FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+# Including missing categories in barplot
+This is the answer that I worked out for [this](http://stackoverflow.com/questions/32310967/get-equal-width-bars-in-a-barplot/32312652#32312652) question on stackoverflow about keeping missing categories when having one categorical variable on the x arix and another as a fill. The solution is to use expand.grid to create all combinations of categorical variables, then full_join to add the missing categories to the dataset with NA values:
+
+
+```{r}
+test_mod3 <- dget("bzfHz45A.txt")
+test_mod3 %>% 
+  mutate(realDist=factor(realDist), clusteringDistance = factor(clusteringDistance)) %>% 
+  group_by(realDist, clusteringDistance) %>% 
+  summarise(mean = mean(1-value), ymin = mean_cl_normal(1-value)$ymin, ymax = mean_cl_normal(1-value)$ymax) %>%
+  full_join(expand.grid(realDist = levels(.$realDist), clusteringDistance = levels(.$clusteringDistance))) %>%
+  ggplot(aes(x = as.factor(realDist), y = mean, fill=as.factor(clusteringDistance), width=0.75 )) +
+      geom_bar(stat = "identity", position=position_dodge(.9), color="black", size=0.2) +
+      geom_errorbar(aes(ymin=ymin, ymax=ymax), width=.35, size=0.3,  position=position_dodge(.9))
+```
+
+# Gantt Carts
+This is the answer that I got for [this](http://stackoverflow.com/questions/32330932/ordering-bars-in-geom-segment-based-ggplot-where-y-values-are-chars-not-factors) question on making Gantt charts. This works pretty well, except when there are multiple entries for the same category which screws up the sorting.
+  
+```{r fig.height=8, fig.width = 10}  
+se.df <- dget("gantt.txt")
+#se.df <-se.df[order(se.df$Start.Date,se.df$Action),]
+#se.df$Action <- factor(se.df$Action, levels=unique(se.df$Action))
+se.df %>% 
+  arrange(desc(Start.Date), desc(Action)) %>%
+  mutate(Action = factor(.$Action, levels=unique(.$Action))) %>%
+  ggplot(aes(x = Start.Date, xend = End.Date, y = Action, yend = Action, color = Comms.Type)) + 
+    geom_segment(size = 5) + 
+    facet_grid(Source ~ .,scale = "free_y",space = "free_y", drop = TRUE) + theme(legend.position="right")
+```
+
+This version from another user works properly (not sure how to put it into a single chain):
+```{r fig.height=8, fig.width = 10} 
+se.df <- se.df %>% 
+  arrange(Start.Date, Action) %>%
+  mutate(taskID = as.factor(nrow(se.df):1))
+
+ggplot(se.df, aes(x = Start.Date, xend = End.Date, y = taskID, yend = taskID, color = Comms.Type)) + 
+    geom_segment(size = 5) + 
+    facet_grid(Source ~ .,scale = "free_y",space = "free_y", drop = TRUE) + theme(legend.position="right", legend.title = element_blank()) +
+    scale_y_discrete(labels=se.df$Action, breaks=se.df$taskID)+
+    xlab('') +
+    ylab('')
+```
+
+# GFF parsing
+```{r}
+source("http://bioconductor.org/biocLite.R")
+biocLite("rtracklayer")
+library(rtracklayer)
+x<-import("~/Desktop/test.gtf")
+x<-import(text="gene1	test	exon	1	100	.	+	.	gene_id ENSG00000243485.3; gene_type lincRNA; gene_status KNOWN; gene_name RP11-34P13.3; level 2; tag ncRNA_host; havana_gene OTTHUMG00000000959.2;", format='GTF')
+x$gene_name
+```
