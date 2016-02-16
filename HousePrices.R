@@ -1,7 +1,6 @@
 library(ggplot2)
 library(dplyr)
 library(RColorBrewer)
-library(scales)
 AllPrices <-data.frame('V1'='', 
                        'V2'='', 
                        'V3'='',
@@ -17,8 +16,6 @@ AllPrices <-data.frame('V1'='',
                        'V13'='', 
                        'V14'='', 
                        'V15'='', 
-                       
-                       'V16'='', 
                        stringsAsFactors=FALSE
                        ) 
 
@@ -43,30 +40,26 @@ for (Street in c('Montgomery',
                  "town=Bristol", 
                  sep="&"
                 )
-    print(url)
     Prices<-read.csv(url, header=F)
     AllPrices<-rbind(AllPrices, Prices)
 }
-names(AllPrices) <- c('unique_id',
-                      'price_paid',
-                      'deed_date',
-                      'postcode',
-                      'property_type',
-                      'new_build',
-                      'estate_type',
-                      'saon',
-                      'paon',
-                      'street',
-                      'locality',
-                      'town',
-                      'district',
-                      'county',
-                      'transaction_category',
-                      'linked_data_uri'
+names(AllPrices) <- c('ID',
+                      'Price', 
+                      'Date', 
+                      'Post Code', 
+                      'Terrace', 
+                      'New', 
+                      'Leasehold',
+                      'Blank1',
+                      'Number',
+                      'Street',
+                      'City1',
+                      'City2',
+                      'City3',
+                      'City4',
+                      'URL'
                       )
-AllPrices$street<- ifelse(AllPrices$paon == 10 & AllPrices$street == 'MARMADUKE STREET','10 MARMADUKE STREET', AllPrices$street)
-AllPrices$Street<- ordered(AllPrices$street, levels=c('10 MARMADUKE STREET',
-                                                       'MONTGOMERY STREET', 
+AllPrices$Street<- ordered(AllPrices$Street, levels=c('MONTGOMERY STREET', 
                                                        'MARMADUKE STREET', 
                                                        'MONMOUTH STREET', 
                                                        'MERIONETH STREET', 
@@ -76,11 +69,11 @@ AllPrices$Street<- ordered(AllPrices$street, levels=c('10 MARMADUKE STREET',
                                                        'NEWPORT STREET'
                                                       )
                           )
-filter(AllPrices, grepl('STREET', street)) %>% 
-  ggplot(., aes(x=as.Date(deed_date, format="%Y-%m-%d"), y=as.numeric(price_paid))) +
+filter(AllPrices, grepl('STREET', Street)) %>% 
+  ggplot(., aes(x=as.Date(Date, format="%Y-%m-%d"), y=as.numeric(Price))) +
   geom_point(aes(colour=Street)) +
   geom_smooth(method="loess", span=.3) +
-  scale_colour_manual(values=c('red', rev(colorRampPalette(brewer.pal(9,"Blues"))(10)[3:10]))) +
+  scale_colour_manual(values=rev(colorRampPalette(brewer.pal(9,"Blues"))(10)[3:10])) +
   scale_x_date(breaks='year', labels = date_format("'%y")) +
   xlab("Date") +
   ylab("Price")
